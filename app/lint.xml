@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Versions are intentionally pinned to the Android-documented AGP 9.3 / Gradle 9.5 line. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+</lint>

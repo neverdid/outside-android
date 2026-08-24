@@ -1,0 +1,24 @@
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local Android configuration
+local.properties
+
+# Signing and secrets
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local toolchains used for verification
+.tooling/
