@@ -76,7 +76,7 @@ Store only approximate discovery coordinates publicly. Reveal a specific meeting
 
 ## Architecture path
 
-The UI currently reads immutable sample models and keeps interaction state in Compose. The next step should introduce interfaces such as `ActivityRepository`, `ConversationRepository`, and `CommunityRepository`, then inject implementations into screen-level view models.
+The UI currently reads immutable activity/community sample models and keeps those interactions in Compose. Session and profile state now use a `SessionRepository`, an AndroidX DataStore-backed local implementation, and a screen-independent view model. The next backend step should preserve that boundary while introducing `ActivityRepository`, `ConversationRepository`, and `CommunityRepository` interfaces.
 
 A pragmatic early backend can use either:
 

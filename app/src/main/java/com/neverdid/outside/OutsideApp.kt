@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.neverdid.outside.data.SampleData
 import com.neverdid.outside.model.Activity
 import com.neverdid.outside.model.Conversation
+import com.neverdid.outside.model.UserProfile
 import com.neverdid.outside.ui.components.HostActivitySheet
 import com.neverdid.outside.ui.screens.ActivityDetailScreen
 import com.neverdid.outside.ui.screens.ChatScreen
@@ -40,6 +41,7 @@ import com.neverdid.outside.ui.screens.DiscoverScreen
 import com.neverdid.outside.ui.screens.FeedScreen
 import com.neverdid.outside.ui.screens.ForumScreen
 import com.neverdid.outside.ui.screens.InboxScreen
+import com.neverdid.outside.ui.screens.ProfileScreen
 import com.neverdid.outside.ui.theme.Forest
 import com.neverdid.outside.ui.theme.Lime
 import kotlinx.coroutines.launch
@@ -56,10 +58,14 @@ private enum class AppTab(
 }
 
 @Composable
-fun OutsideApp() {
+fun OutsideApp(
+    profile: UserProfile,
+    onSignOut: () -> Unit,
+) {
     var selectedTab by remember { mutableStateOf(AppTab.DISCOVER) }
     var selectedActivity by remember { mutableStateOf<Activity?>(null) }
     var selectedConversation by remember { mutableStateOf<Conversation?>(null) }
+    var showProfile by remember { mutableStateOf(false) }
     var showHostSheet by remember { mutableStateOf(false) }
     val joinedActivityIds = remember { mutableStateListOf<String>() }
     val likedPostIds = remember { mutableStateListOf<String>() }
@@ -69,15 +75,19 @@ fun OutsideApp() {
     val onBack: () -> Unit = {
         selectedActivity = null
         selectedConversation = null
+        showProfile = false
     }
-    BackHandler(enabled = selectedActivity != null || selectedConversation != null, onBack = onBack)
+    BackHandler(
+        enabled = selectedActivity != null || selectedConversation != null || showProfile,
+        onBack = onBack,
+    )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (selectedActivity == null && selectedConversation == null) {
+            if (selectedActivity == null && selectedConversation == null && !showProfile) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp,
@@ -106,6 +116,13 @@ fun OutsideApp() {
         },
     ) { innerPadding ->
         when {
+            showProfile -> ProfileScreen(
+                profile = profile,
+                innerPadding = innerPadding,
+                onBack = onBack,
+                onSignOut = onSignOut,
+            )
+
             selectedActivity != null -> ActivityDetailScreen(
                 activity = selectedActivity!!,
                 isJoined = selectedActivity!!.id in joinedActivityIds,
@@ -139,9 +156,12 @@ fun OutsideApp() {
             selectedTab == AppTab.DISCOVER -> DiscoverScreen(
                 activities = SampleData.activities,
                 joinedActivityIds = joinedActivityIds,
+                locationName = profile.city,
+                profileInitials = profile.initials,
                 innerPadding = innerPadding,
                 onActivityClick = { selectedActivity = it },
                 onHostActivity = { showHostSheet = true },
+                onProfileClick = { showProfile = true },
             )
 
             selectedTab == AppTab.FEED -> FeedScreen(

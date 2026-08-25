@@ -4,7 +4,7 @@
 
 Outside is a native Android concept for turning shared hobbies into real-world plans. It helps people discover nearby activities, join small groups, talk before meeting, and stay connected afterward.
 
-This repository contains a polished, interactive app foundation built with Kotlin, Jetpack Compose, and Material 3. It currently runs on local sample data, so the entire product flow is easy to explore before a backend is selected.
+This repository contains a polished, interactive app foundation built with Kotlin, Jetpack Compose, and Material 3. Activity and community content currently use local sample data, so the entire product flow is easy to explore before a backend is selected.
 
 ## What is included
 
@@ -12,6 +12,8 @@ This repository contains a polished, interactive app foundation built with Kotli
 - **Feed:** lightweight stories from recent activities with working reactions
 - **Community:** searchable, category-based forum topics and a weekly conversation prompt
 - **Direct messages:** individual and activity group conversations with locally sendable messages
+- **Onboarding:** welcome and email flows, first-name setup, approximate area and radius, interest selection, and self-described experience
+- **Local session:** the completed profile persists across restarts, returning users can sign back in, and sign-out is available from the profile screen
 - **Thoughtful defaults:** beginner-friendly language, visible group size, public meeting guidance, and no popularity-first profile metrics
 - **Foundation:** Compose theme, reusable components, domain models, mock data, unit tests, and CI
 
@@ -53,16 +55,19 @@ The debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
 ```text
 app/src/main/java/com/neverdid/outside/
 ├── data/            Local sample repository
-├── model/           Activity, feed, forum, conversation models
+│   └── session/     Replaceable session repository and DataStore implementation
+├── model/           Activity, community, conversation, and profile models
+├── session/         Session state and view model
+├── ui/onboarding/   Pure onboarding validation rules
 ├── ui/components/   Reusable cards, avatars, and plan composer
-├── ui/screens/      Discover, feed, forum, inbox, chat, and detail UI
+├── ui/screens/      Authentication, onboarding, profile, and core product UI
 └── ui/theme/        Color, typography, and Material theme
 ```
 
 ## Next engineering milestones
 
-1. Add authentication and interest/location onboarding.
-2. Replace `SampleData` with repositories backed by Supabase or Firebase.
+1. **In progress:** authentication and interest/location onboarding. The full local flow and backend seam are complete; production identity is the remaining part.
+2. Replace `SampleData` with repositories backed by Supabase or Firebase, including production authentication.
 3. Add geospatial discovery, date/distance filters, and map links.
 4. Add realtime DMs and per-activity group chats.
 5. Add reporting, blocking, moderation, and host cancellation flows before public launch.
@@ -70,4 +75,4 @@ app/src/main/java/com/neverdid/outside/
 
 ## Status
 
-`0.1.0` — product and UI foundation. No production backend or user data is connected yet.
+`0.2.0` — local authentication/onboarding milestone. Profiles persist only on the device; no production backend or remote user data is connected yet. See [docs/MILESTONE_1_AUTH_ONBOARDING.md](docs/MILESTONE_1_AUTH_ONBOARDING.md).
