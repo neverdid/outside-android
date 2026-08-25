@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Hiking
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +53,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.neverdid.outside.data.BackendMode
+import com.neverdid.outside.data.session.AuthenticationMode
 import com.neverdid.outside.ui.onboarding.isValidEmail
 import com.neverdid.outside.ui.onboarding.isValidPassword
 import com.neverdid.outside.ui.theme.Forest
@@ -60,21 +63,38 @@ import com.neverdid.outside.ui.theme.Lime
 private enum class AuthPage { WELCOME, CREATE_ACCOUNT, SIGN_IN }
 
 @Composable
-fun AuthScreen(onAuthenticate: (String) -> Unit) {
+fun AuthScreen(
+    backendMode: BackendMode,
+    isAuthenticating: Boolean,
+    authenticationError: String?,
+    onClearError: () -> Unit,
+    onAuthenticate: (String, String, AuthenticationMode) -> Unit,
+) {
     var page by remember { mutableStateOf(AuthPage.WELCOME) }
 
     BackHandler(enabled = page != AuthPage.WELCOME) { page = AuthPage.WELCOME }
 
     when (page) {
         AuthPage.WELCOME -> WelcomePage(
-            onCreateAccount = { page = AuthPage.CREATE_ACCOUNT },
-            onSignIn = { page = AuthPage.SIGN_IN },
+            onCreateAccount = {
+                onClearError()
+                page = AuthPage.CREATE_ACCOUNT
+            },
+            onSignIn = {
+                onClearError()
+                page = AuthPage.SIGN_IN
+            },
         )
 
         AuthPage.CREATE_ACCOUNT -> EmailAuthPage(
             title = "Create your account",
             subtitle = "A few quick choices, then you can see what people nearby want to do.",
             actionLabel = "Continue",
+            mode = AuthenticationMode.CREATE_ACCOUNT,
+            backendMode = backendMode,
+            isAuthenticating = isAuthenticating,
+            authenticationError = authenticationError,
+            onClearError = onClearError,
             onBack = { page = AuthPage.WELCOME },
             onAuthenticate = onAuthenticate,
         )
@@ -83,6 +103,11 @@ fun AuthScreen(onAuthenticate: (String) -> Unit) {
             title = "Welcome back",
             subtitle = "Sign in to return to your plans, people, and conversations.",
             actionLabel = "Sign in",
+            mode = AuthenticationMode.SIGN_IN,
+            backendMode = backendMode,
+            isAuthenticating = isAuthenticating,
+            authenticationError = authenticationError,
+            onClearError = onClearError,
             onBack = { page = AuthPage.WELCOME },
             onAuthenticate = onAuthenticate,
         )
@@ -226,8 +251,13 @@ private fun EmailAuthPage(
     title: String,
     subtitle: String,
     actionLabel: String,
+    mode: AuthenticationMode,
+    backendMode: BackendMode,
+    isAuthenticating: Boolean,
+    authenticationError: String?,
+    onClearError: () -> Unit,
     onBack: () -> Unit,
-    onAuthenticate: (String) -> Unit,
+    onAuthenticate: (String, String, AuthenticationMode) -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -236,7 +266,7 @@ private fun EmailAuthPage(
     val canSubmit = isValidEmail(email) && isValidPassword(password)
     val submit = {
         showValidation = true
-        if (canSubmit) onAuthenticate(email.trim())
+        if (canSubmit) onAuthenticate(email.trim(), password, mode)
     }
 
     Column(
@@ -261,7 +291,10 @@ private fun EmailAuthPage(
         Spacer(Modifier.height(34.dp))
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {
+                email = it
+                onClearError()
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Email") },
             placeholder = { Text("you@example.com") },
@@ -282,7 +315,10 @@ private fun EmailAuthPage(
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                onClearError()
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Password") },
             singleLine = true,
@@ -299,6 +335,16 @@ private fun EmailAuthPage(
             shape = RoundedCornerShape(18.dp),
         )
         Spacer(Modifier.height(22.dp))
+        if (authenticationError != null) {
+            Text(
+                text = authenticationError,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         Button(
             onClick = submit,
             modifier = Modifier
@@ -306,11 +352,24 @@ private fun EmailAuthPage(
                 .height(56.dp),
             shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Forest),
+            enabled = !isAuthenticating,
         ) {
-            Text(actionLabel, fontWeight = FontWeight.Bold)
+            if (isAuthenticating) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Text(actionLabel, fontWeight = FontWeight.Bold)
+            }
         }
         Text(
-            text = "Milestone preview: this session is stored only on this device. Your password is never saved.",
+            text = if (backendMode == BackendMode.FIREBASE) {
+                "Secure account powered by Firebase Authentication. Outside never stores your raw password."
+            } else {
+                "Demo mode: this session stays on this device and your password is never saved. Add Firebase configuration to enable real accounts."
+            },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 16.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
