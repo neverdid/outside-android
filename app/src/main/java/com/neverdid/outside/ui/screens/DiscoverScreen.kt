@@ -1,6 +1,7 @@
 package com.neverdid.outside.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,9 +58,12 @@ import com.neverdid.outside.ui.theme.Lime
 fun DiscoverScreen(
     activities: List<Activity>,
     joinedActivityIds: List<String>,
+    locationName: String,
+    profileInitials: String,
     innerPadding: PaddingValues,
     onActivityClick: (Activity) -> Unit,
     onHostActivity: () -> Unit,
+    onProfileClick: () -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(ActivityCategory.ALL) }
@@ -82,7 +86,11 @@ fun DiscoverScreen(
                 modifier = Modifier.padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                DiscoverHeader()
+                DiscoverHeader(
+                    locationName = locationName,
+                    profileInitials = profileInitials,
+                    onProfileClick = onProfileClick,
+                )
                 HeroCard(onHostActivity = onHostActivity)
                 OutlinedTextField(
                     value = query,
@@ -157,7 +165,11 @@ fun DiscoverScreen(
 }
 
 @Composable
-private fun DiscoverHeader() {
+private fun DiscoverHeader(
+    locationName: String,
+    profileInitials: String,
+    onProfileClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -167,7 +179,7 @@ private fun DiscoverHeader() {
     ) {
         Column {
             Text(
-                text = "BRAȘOV",
+                text = locationName.uppercase(),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelSmall,
             )
@@ -190,7 +202,12 @@ private fun DiscoverHeader() {
                 Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
             }
             Spacer(Modifier.size(10.dp))
-            OutsideAvatar(initials = "OS", modifier = Modifier.size(44.dp))
+            OutsideAvatar(
+                initials = profileInitials,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clickable(onClick = onProfileClick),
+            )
         }
     }
 }
