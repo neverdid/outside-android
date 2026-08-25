@@ -28,7 +28,7 @@ Returning profiles skip onboarding. The Discover header uses the saved city and 
 
 This milestone deliberately does **not** pretend to provide server authentication. The password field validates the future production interaction, but passwords are never passed to or stored by the local repository. Only the normalized email, profile choices, and a local signed-in flag are stored on the device.
 
-Before external testing with real accounts, replace `LocalSessionRepository` with a production implementation using Firebase Auth or Supabase Auth. That implementation must use the provider SDK’s secure token storage and account-recovery flows; application code must never persist raw passwords.
+Milestone 2 added `FirebaseSessionRepository`. When Firebase configuration is present, credentials are sent directly to Firebase Authentication and application code never persists raw passwords. `LocalSessionRepository` remains only as the clearly labelled, zero-credential demo path.
 
 ## Backend seam
 
@@ -37,7 +37,7 @@ Before external testing with real accounts, replace `LocalSessionRepository` wit
 ```kotlin
 interface SessionRepository {
     val currentProfile: Flow<UserProfile?>
-    suspend fun signIn(email: String)
+    suspend fun authenticate(email: String, password: String, mode: AuthenticationMode)
     suspend fun completeOnboarding(/* profile fields */)
     suspend fun signOut()
 }
@@ -54,6 +54,6 @@ The root UI reacts only to session states (`Loading`, `SignedOut`, `NeedsOnboard
 - [x] Restarting the app restores the active profile.
 - [x] Signing out returns to the welcome page without storing a password.
 - [x] Signing back in with the same email restores the completed profile.
-- [ ] Production identity provider and remote profile record.
+- [x] Production identity provider and remote profile record.
 - [ ] Account recovery, email verification, and account deletion.
 - [ ] Instrumented Compose tests on an emulator/device.

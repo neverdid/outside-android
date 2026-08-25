@@ -8,7 +8,11 @@ import kotlinx.coroutines.flow.Flow
 interface SessionRepository {
     val currentProfile: Flow<UserProfile?>
 
-    suspend fun signIn(email: String)
+    suspend fun authenticate(
+        email: String,
+        password: String,
+        mode: AuthenticationMode,
+    )
 
     suspend fun completeOnboarding(
         firstName: String,
@@ -19,4 +23,9 @@ interface SessionRepository {
     )
 
     suspend fun signOut()
+}
+
+enum class AuthenticationMode {
+    CREATE_ACCOUNT,
+    SIGN_IN,
 }

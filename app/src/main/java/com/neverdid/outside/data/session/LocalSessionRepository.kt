@@ -46,10 +46,16 @@ class LocalSessionRepository(context: Context) : SessionRepository {
             )
         }
 
-    override suspend fun signIn(email: String) {
+    override suspend fun authenticate(
+        email: String,
+        password: String,
+        mode: AuthenticationMode,
+    ) {
+        require(password.length >= 6) { "Use at least 6 characters." }
         val normalizedEmail = email.trim().lowercase()
         dataStore.edit { preferences ->
-            val isReturningProfile = preferences[Keys.EMAIL] == normalizedEmail &&
+            val isReturningProfile = mode == AuthenticationMode.SIGN_IN &&
+                preferences[Keys.EMAIL] == normalizedEmail &&
                 preferences[Keys.ONBOARDING_COMPLETE] == true
 
             if (!isReturningProfile) {

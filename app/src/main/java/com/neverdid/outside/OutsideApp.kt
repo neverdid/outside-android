@@ -21,8 +21,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,11 +30,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.neverdid.outside.data.SampleData
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.neverdid.outside.content.OutsideViewModel
+import com.neverdid.outside.content.OutsideViewModelFactory
+import com.neverdid.outside.data.BackendMode
+import com.neverdid.outside.data.content.ContentRepositories
+import com.neverdid.outside.data.content.NewActivity
 import com.neverdid.outside.model.Activity
 import com.neverdid.outside.model.Conversation
 import com.neverdid.outside.model.UserProfile
 import com.neverdid.outside.ui.components.HostActivitySheet
+import com.neverdid.outside.ui.components.TopicComposerSheet
 import com.neverdid.outside.ui.screens.ActivityDetailScreen
 import com.neverdid.outside.ui.screens.ChatScreen
 import com.neverdid.outside.ui.screens.DiscoverScreen
@@ -60,17 +67,28 @@ private enum class AppTab(
 @Composable
 fun OutsideApp(
     profile: UserProfile,
+    backendMode: BackendMode,
+    repositories: ContentRepositories,
     onSignOut: () -> Unit,
 ) {
+    val viewModelFactory = remember(repositories) { OutsideViewModelFactory(repositories) }
+    val outsideViewModel: OutsideViewModel = viewModel(
+        key = "outside-${profile.id}",
+        factory = viewModelFactory,
+    )
+    val uiState by outsideViewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableStateOf(AppTab.DISCOVER) }
     var selectedActivity by remember { mutableStateOf<Activity?>(null) }
     var selectedConversation by remember { mutableStateOf<Conversation?>(null) }
     var showProfile by remember { mutableStateOf(false) }
     var showHostSheet by remember { mutableStateOf(false) }
-    val joinedActivityIds = remember { mutableStateListOf<String>() }
-    val likedPostIds = remember { mutableStateListOf<String>() }
+    var showTopicSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(outsideViewModel) {
+        outsideViewModel.events.collect { message -> snackbarHostState.showSnackbar(message) }
+    }
 
     val onBack: () -> Unit = {
         selectedActivity = null
@@ -118,44 +136,62 @@ fun OutsideApp(
         when {
             showProfile -> ProfileScreen(
                 profile = profile,
+                backendMode = backendMode,
                 innerPadding = innerPadding,
                 onBack = onBack,
                 onSignOut = onSignOut,
             )
 
-            selectedActivity != null -> ActivityDetailScreen(
-                activity = selectedActivity!!,
-                isJoined = selectedActivity!!.id in joinedActivityIds,
-                innerPadding = innerPadding,
-                onBack = onBack,
-                onJoin = {
-                    val id = selectedActivity!!.id
-                    if (id in joinedActivityIds) {
-                        joinedActivityIds.remove(id)
-                        scope.launch { snackbarHostState.showSnackbar("You left this plan") }
-                    } else {
-                        joinedActivityIds.add(id)
-                        scope.launch { snackbarHostState.showSnackbar("You’re in! The group chat is ready.") }
-                    }
-                },
-                onMessageHost = {
-                    selectedConversation = SampleData.conversations.firstOrNull {
-                        it.name.contains(selectedActivity!!.host.substringBefore(" "))
-                    } ?: SampleData.conversations.first()
-                    selectedActivity = null
-                },
-            )
+            selectedActivity != null -> {
+                val currentActivity = uiState.activities.firstOrNull { it.id == selectedActivity!!.id }
+                    ?: selectedActivity!!
+                ActivityDetailScreen(
+                    activity = currentActivity,
+                    isJoined = currentActivity.id in uiState.joinedActivityIds,
+                    innerPadding = innerPadding,
+                    onBack = onBack,
+                    onJoin = {
+                        val wasJoined = currentActivity.id in uiState.joinedActivityIds
+                        outsideViewModel.toggleJoin(currentActivity.id)
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (wasJoined) {
+                                    "You left this plan"
+                                } else {
+                                    "You’re in! The group chat is ready."
+                                },
+                            )
+                        }
+                    },
+                    onMessageHost = {
+                        val hostConversation = uiState.conversations.firstOrNull {
+                            it.name.contains(currentActivity.host.substringBefore(" "))
+                        }
+                        if (hostConversation != null) {
+                            selectedConversation = hostConversation
+                            selectedActivity = null
+                        } else {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "A direct conversation with this host isn’t available yet.",
+                                )
+                            }
+                        }
+                    },
+                )
+            }
 
-            selectedConversation != null -> ChatScreen(
+            selectedConversation != null -> ConnectedChatScreen(
                 conversation = selectedConversation!!,
-                initialMessages = SampleData.messages[selectedConversation!!.id].orEmpty(),
+                profile = profile,
+                outsideViewModel = outsideViewModel,
                 innerPadding = innerPadding,
                 onBack = onBack,
             )
 
             selectedTab == AppTab.DISCOVER -> DiscoverScreen(
-                activities = SampleData.activities,
-                joinedActivityIds = joinedActivityIds,
+                activities = uiState.activities,
+                joinedActivityIds = uiState.joinedActivityIds.toList(),
                 locationName = profile.city,
                 profileInitials = profile.initials,
                 innerPadding = innerPadding,
@@ -165,25 +201,21 @@ fun OutsideApp(
             )
 
             selectedTab == AppTab.FEED -> FeedScreen(
-                posts = SampleData.feedPosts,
-                likedPostIds = likedPostIds,
+                posts = uiState.posts,
+                likedPostIds = uiState.likedPostIds.toList(),
                 innerPadding = innerPadding,
-                onLike = { id ->
-                    if (id in likedPostIds) likedPostIds.remove(id) else likedPostIds.add(id)
-                },
+                onLike = outsideViewModel::toggleLike,
                 onFindPlan = { selectedTab = AppTab.DISCOVER },
             )
 
             selectedTab == AppTab.COMMUNITY -> ForumScreen(
-                topics = SampleData.topics,
+                topics = uiState.topics,
                 innerPadding = innerPadding,
-                onNewTopic = {
-                    scope.launch { snackbarHostState.showSnackbar("Topic composer is ready for backend wiring") }
-                },
+                onNewTopic = { showTopicSheet = true },
             )
 
             else -> InboxScreen(
-                conversations = SampleData.conversations,
+                conversations = uiState.conversations,
                 innerPadding = innerPadding,
                 onConversationClick = { selectedConversation = it },
             )
@@ -193,12 +225,42 @@ fun OutsideApp(
     if (showHostSheet) {
         HostActivitySheet(
             onDismiss = { showHostSheet = false },
-            onPublish = { title ->
+            onPublish = { title, location, category ->
                 showHostSheet = false
-                scope.launch {
-                    snackbarHostState.showSnackbar("“$title” is saved as a draft plan")
-                }
+                outsideViewModel.createActivity(
+                    draft = NewActivity(title, location, category),
+                    host = profile,
+                )
             },
         )
     }
+
+    if (showTopicSheet) {
+        TopicComposerSheet(
+            onDismiss = { showTopicSheet = false },
+            onPublish = { title, body, category ->
+                showTopicSheet = false
+                outsideViewModel.createTopic(title, body, category, profile)
+            },
+        )
+    }
+}
+
+@Composable
+private fun ConnectedChatScreen(
+    conversation: Conversation,
+    profile: UserProfile,
+    outsideViewModel: OutsideViewModel,
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    onBack: () -> Unit,
+) {
+    val messageFlow = remember(conversation.id) { outsideViewModel.messages(conversation.id) }
+    val messages by messageFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    ChatScreen(
+        conversation = conversation,
+        messages = messages,
+        innerPadding = innerPadding,
+        onBack = onBack,
+        onSendMessage = { body -> outsideViewModel.sendMessage(conversation.id, body, profile) },
+    )
 }
