@@ -15,6 +15,7 @@ local.properties
 *.keystore
 keystore.properties
 secrets.properties
+app/google-services.json
 
 # OS files
 .DS_Store

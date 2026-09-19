@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.neverdid.outside.data.BackendMode
 import com.neverdid.outside.model.UserProfile
 import com.neverdid.outside.ui.components.OutsideAvatar
 import com.neverdid.outside.ui.theme.Forest
@@ -42,6 +43,7 @@ import com.neverdid.outside.ui.theme.Lime
 @Composable
 fun ProfileScreen(
     profile: UserProfile,
+    backendMode: BackendMode,
     innerPadding: PaddingValues,
     onBack: () -> Unit,
     onSignOut: () -> Unit,
@@ -165,12 +167,20 @@ fun ProfileScreen(
                     )
                     Column {
                         Text(
-                            "Private milestone preview",
+                            if (backendMode == BackendMode.FIREBASE) {
+                                "Firebase account"
+                            } else {
+                                "Demo account"
+                            },
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
-                            "This profile is stored on this device. Cloud accounts and cross-device sync arrive with the backend milestone.",
+                            if (backendMode == BackendMode.FIREBASE) {
+                                "Your account and profile are synced through Firebase. Content updates use realtime Firestore listeners."
+                            } else {
+                                "This profile and your changes stay on this device. Add Firebase configuration to enable cloud sync."
+                            },
                             color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.78f),
                             style = MaterialTheme.typography.bodySmall,
                         )

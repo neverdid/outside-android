@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.neverdid.outside.data.session.SessionRepository
+import com.neverdid.outside.data.AppContainer
 import com.neverdid.outside.session.SessionUiState
 import com.neverdid.outside.session.SessionViewModel
 import com.neverdid.outside.session.SessionViewModelFactory
@@ -19,10 +19,14 @@ import com.neverdid.outside.ui.screens.AuthScreen
 import com.neverdid.outside.ui.screens.OnboardingScreen
 
 @Composable
-fun OutsideRoot(repository: SessionRepository) {
-    val factory = remember(repository) { SessionViewModelFactory(repository) }
+fun OutsideRoot(container: AppContainer) {
+    val factory = remember(container.sessionRepository) {
+        SessionViewModelFactory(container.sessionRepository)
+    }
     val sessionViewModel: SessionViewModel = viewModel(factory = factory)
     val uiState by sessionViewModel.uiState.collectAsStateWithLifecycle()
+    val isAuthenticating by sessionViewModel.isAuthenticating.collectAsStateWithLifecycle()
+    val authenticationError by sessionViewModel.authenticationError.collectAsStateWithLifecycle()
 
     when (val state = uiState) {
         SessionUiState.Loading -> Box(
@@ -32,7 +36,13 @@ fun OutsideRoot(repository: SessionRepository) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
 
-        SessionUiState.SignedOut -> AuthScreen(onAuthenticate = sessionViewModel::signIn)
+        SessionUiState.SignedOut -> AuthScreen(
+            backendMode = container.backendMode,
+            isAuthenticating = isAuthenticating,
+            authenticationError = authenticationError,
+            onClearError = sessionViewModel::clearAuthenticationError,
+            onAuthenticate = sessionViewModel::authenticate,
+        )
 
         is SessionUiState.NeedsOnboarding -> OnboardingScreen(
             profile = state.profile,
@@ -42,6 +52,8 @@ fun OutsideRoot(repository: SessionRepository) {
 
         is SessionUiState.Ready -> OutsideApp(
             profile = state.profile,
+            backendMode = container.backendMode,
+            repositories = container.contentRepositories,
             onSignOut = sessionViewModel::signOut,
         )
     }

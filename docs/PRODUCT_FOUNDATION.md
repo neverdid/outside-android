@@ -76,14 +76,14 @@ Store only approximate discovery coordinates publicly. Reveal a specific meeting
 
 ## Architecture path
 
-The UI currently reads immutable activity/community sample models and keeps those interactions in Compose. Session and profile state now use a `SessionRepository`, an AndroidX DataStore-backed local implementation, and a screen-independent view model. The next backend step should preserve that boundary while introducing `ActivityRepository`, `ConversationRepository`, and `CommunityRepository` interfaces.
+The UI reads repository-backed flows through screen-level view models. `SessionRepository`, `ActivityRepository`, `FeedRepository`, `ConversationRepository`, and `CommunityRepository` each have demo and/or Firebase implementations. `AppContainer` selects the Firebase stack when project configuration is present and an explicit demo stack otherwise.
 
-A pragmatic early backend can use either:
+A pragmatic early backend could use either:
 
 - **Firebase:** strong Android SDKs, auth, realtime chat, notifications, and analytics in one ecosystem.
 - **Supabase:** relational/Postgres model, row-level security, realtime, and more direct SQL/geospatial control.
 
-Choose after validating whether the team values mobile-integrated infrastructure speed or relational/geospatial transparency more. Keep the domain interfaces independent either way.
+Firebase was selected for the first cloud implementation because authentication, realtime listeners, and the Android SDK can support the early closed beta with little operational surface area. The domain interfaces remain independent so geospatial needs can still move to a relational service later without rewriting the UI.
 
 ## Trust and safety baseline
 

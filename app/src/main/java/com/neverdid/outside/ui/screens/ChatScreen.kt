@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,11 +49,11 @@ import com.neverdid.outside.ui.theme.Lime
 @Composable
 fun ChatScreen(
     conversation: Conversation,
-    initialMessages: List<ChatMessage>,
+    messages: List<ChatMessage>,
     innerPadding: PaddingValues,
     onBack: () -> Unit,
+    onSendMessage: (String) -> Unit,
 ) {
-    val messages = remember(conversation.id) { initialMessages.toMutableStateList() }
     var draft by remember(conversation.id) { mutableStateOf("") }
     val listState = rememberLazyListState()
 
@@ -99,15 +98,7 @@ fun ChatScreen(
             onSend = {
                 val body = draft.trim()
                 if (body.isNotEmpty()) {
-                    messages.add(
-                        ChatMessage(
-                            id = "local-${messages.size}",
-                            sender = "You",
-                            body = body,
-                            time = "Now",
-                            isMine = true,
-                        ),
-                    )
+                    onSendMessage(body)
                     draft = ""
                 }
             },

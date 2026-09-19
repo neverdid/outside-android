@@ -1,6 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.google.services) apply false
+}
+
+val firebaseConfigured = file("google-services.json").exists()
+if (firebaseConfigured) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -11,8 +17,9 @@ android {
         applicationId = "com.neverdid.outside"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
+        buildConfigField("boolean", "FIREBASE_CONFIGURED", firebaseConfigured.toString())
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -56,6 +63,10 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

@@ -256,7 +256,7 @@ fun accentStrong(accent: ActivityAccent): Color = when (accent) {
 @Composable
 fun HostActivitySheet(
     onDismiss: () -> Unit,
-    onPublish: (String) -> Unit,
+    onPublish: (String, String, ActivityCategory) -> Unit,
 ) {
     var title by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
@@ -312,11 +312,17 @@ fun HostActivitySheet(
             }
             Spacer(Modifier.height(2.dp))
             Button(
-                onClick = { onPublish(title.ifBlank { "Untitled outside plan" }) },
+                onClick = {
+                    onPublish(
+                        title.ifBlank { "Untitled outside plan" },
+                        location,
+                        selectedCategory,
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
-                enabled = title.isNotBlank(),
+                enabled = title.isNotBlank() && location.isNotBlank(),
                 shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Forest,
