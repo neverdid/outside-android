@@ -49,7 +49,21 @@ data class FeedPost(
     val reactions: Int,
     val comments: Int,
     val accent: ActivityAccent,
+    val authorId: String = "",
+    val category: ActivityCategory = ActivityCategory.CASUAL,
+    val intent: FeedPostIntent = FeedPostIntent.MOMENT,
+    val createdAtEpochMillis: Long = 0L,
+    val distanceKm: Double? = null,
+    val relatedActivityId: String? = null,
 )
+
+enum class FeedPostIntent {
+    LOOKING_FOR_PEOPLE,
+    PLAN_RECAP,
+    QUESTION,
+    TIP,
+    MOMENT,
+}
 
 data class ForumTopic(
     val id: String,

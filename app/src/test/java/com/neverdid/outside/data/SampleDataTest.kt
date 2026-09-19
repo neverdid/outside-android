@@ -25,4 +25,11 @@ class SampleDataTest {
         val knownConversationIds = SampleData.conversations.map { it.id }.toSet()
         assertTrue(SampleData.messages.keys.all { it in knownConversationIds })
     }
+
+    @Test
+    fun feedPostsContainRankingSignals() {
+        assertTrue(SampleData.feedPosts.all { it.createdAtEpochMillis > 0L })
+        assertTrue(SampleData.feedPosts.any { it.distanceKm != null })
+        assertTrue(SampleData.feedPosts.map { it.category }.toSet().size >= 4)
+    }
 }
