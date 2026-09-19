@@ -2,6 +2,11 @@ package com.neverdid.outside
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.DynamicFeed
@@ -28,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,7 +77,9 @@ fun OutsideApp(
     repositories: ContentRepositories,
     onSignOut: () -> Unit,
 ) {
-    val viewModelFactory = remember(repositories) { OutsideViewModelFactory(repositories) }
+    val viewModelFactory = remember(repositories, profile) {
+        OutsideViewModelFactory(repositories, profile)
+    }
     val outsideViewModel: OutsideViewModel = viewModel(
         key = "outside-${profile.id}",
         factory = viewModelFactory,
@@ -134,6 +142,8 @@ fun OutsideApp(
         },
     ) { innerPadding ->
         when {
+            uiState.isLoading -> LoadingContent(innerPadding)
+
             showProfile -> ProfileScreen(
                 profile = profile,
                 backendMode = backendMode,
@@ -201,10 +211,19 @@ fun OutsideApp(
             )
 
             selectedTab == AppTab.FEED -> FeedScreen(
-                posts = uiState.posts,
+                posts = uiState.feed,
                 likedPostIds = uiState.likedPostIds.toList(),
+                firstName = profile.firstName,
                 innerPadding = innerPadding,
                 onLike = outsideViewModel::toggleLike,
+                onHide = outsideViewModel::hidePost,
+                onOpenActivity = { activityId ->
+                    uiState.activities.firstOrNull { it.id == activityId }?.let {
+                        selectedActivity = it
+                    } ?: scope.launch {
+                        snackbarHostState.showSnackbar("This plan is no longer available.")
+                    }
+                },
                 onFindPlan = { selectedTab = AppTab.DISCOVER },
             )
 
@@ -243,6 +262,25 @@ fun OutsideApp(
                 outsideViewModel.createTopic(title, body, category, profile)
             },
         )
+    }
+}
+
+@Composable
+private fun LoadingContent(innerPadding: androidx.compose.foundation.layout.PaddingValues) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(innerPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CircularProgressIndicator(color = Forest)
+            Text(
+                "Finding friendly plans near you…",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

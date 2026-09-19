@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.neverdid.outside.data.content.ContentRepositories
 import com.neverdid.outside.data.content.NewActivity
+import com.neverdid.outside.feed.FeedRanker
+import com.neverdid.outside.feed.FeedRankingContext
+import com.neverdid.outside.feed.RankedFeedPost
 import com.neverdid.outside.model.Activity
+import com.neverdid.outside.model.ActivityCategory
 import com.neverdid.outside.model.ChatMessage
 import com.neverdid.outside.model.Conversation
 import com.neverdid.outside.model.FeedPost
@@ -13,6 +17,7 @@ import com.neverdid.outside.model.ForumTopic
 import com.neverdid.outside.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -20,9 +25,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class OutsideUiState(
+    val isLoading: Boolean = true,
     val activities: List<Activity> = emptyList(),
     val joinedActivityIds: Set<String> = emptySet(),
-    val posts: List<FeedPost> = emptyList(),
+    val feed: List<RankedFeedPost> = emptyList(),
     val likedPostIds: Set<String> = emptySet(),
     val topics: List<ForumTopic> = emptyList(),
     val conversations: List<Conversation> = emptyList(),
@@ -36,9 +42,17 @@ private data class DiscoveryCommunityState(
     val topics: List<ForumTopic>,
 )
 
+private data class FeedSessionFeedback(
+    val hiddenPostIds: Set<String> = emptySet(),
+    val demotedCategories: Set<ActivityCategory> = emptySet(),
+)
+
 class OutsideViewModel(
     private val repositories: ContentRepositories,
+    private val profile: UserProfile,
 ) : ViewModel() {
+    private val feedFeedback = MutableStateFlow(FeedSessionFeedback())
+
     private val coreState = combine(
         repositories.activities.activities,
         repositories.activities.joinedActivityIds,
@@ -52,11 +66,28 @@ class OutsideViewModel(
     val uiState: StateFlow<OutsideUiState> = combine(
         coreState,
         repositories.conversations.conversations,
-    ) { core, conversations ->
+        feedFeedback,
+    ) { core, conversations, feedback ->
+        val joinedCategories = core.activities
+            .filter { it.id in core.joinedActivityIds }
+            .mapTo(mutableSetOf()) { it.category }
         OutsideUiState(
+            isLoading = false,
             activities = core.activities,
             joinedActivityIds = core.joinedActivityIds,
-            posts = core.posts,
+            feed = FeedRanker.rank(
+                posts = core.posts,
+                context = FeedRankingContext(
+                    interests = profile.interests,
+                    radiusKm = profile.radiusKm,
+                    likedPostIds = core.likedPostIds,
+                    joinedActivityIds = core.joinedActivityIds,
+                    joinedCategories = joinedCategories,
+                    hiddenPostIds = feedback.hiddenPostIds,
+                    demotedCategories = feedback.demotedCategories,
+                    sessionSeed = profile.id.hashCode(),
+                ),
+            ),
             likedPostIds = core.likedPostIds,
             topics = core.topics,
             conversations = conversations,
@@ -84,6 +115,19 @@ class OutsideViewModel(
 
     fun toggleLike(postId: String) = launchOperation {
         repositories.feed.toggleLike(postId)
+    }
+
+    fun hidePost(postId: String) {
+        val category = uiState.value.feed.firstOrNull { it.post.id == postId }?.post?.category
+        feedFeedback.value = feedFeedback.value.copy(
+            hiddenPostIds = feedFeedback.value.hiddenPostIds + postId,
+            demotedCategories = if (category == null) {
+                feedFeedback.value.demotedCategories
+            } else {
+                feedFeedback.value.demotedCategories + category
+            },
+        )
+        events.tryEmit("Hidden for this session. We’ll tune your feed as you give more feedback.")
     }
 
     fun createTopic(
@@ -115,10 +159,11 @@ class OutsideViewModel(
 
 class OutsideViewModelFactory(
     private val repositories: ContentRepositories,
+    private val profile: UserProfile,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         require(modelClass.isAssignableFrom(OutsideViewModel::class.java))
-        return OutsideViewModel(repositories) as T
+        return OutsideViewModel(repositories, profile) as T
     }
 }

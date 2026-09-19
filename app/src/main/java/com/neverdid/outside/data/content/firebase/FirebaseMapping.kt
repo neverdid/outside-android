@@ -9,6 +9,7 @@ import com.neverdid.outside.model.ActivityCategory
 import com.neverdid.outside.model.ChatMessage
 import com.neverdid.outside.model.Conversation
 import com.neverdid.outside.model.FeedPost
+import com.neverdid.outside.model.FeedPostIntent
 import com.neverdid.outside.model.ForumTopic
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -51,6 +52,7 @@ internal fun DocumentSnapshot.toActivity(): Activity? {
 
 internal fun DocumentSnapshot.toFeedPost(): FeedPost? {
     val text = getString("text")?.takeIf { it.isNotBlank() } ?: return null
+    val createdAt = getTimestamp("createdAt")
     return FeedPost(
         id = id,
         author = getString("authorName").orEmpty().ifBlank { "Outside member" },
@@ -61,6 +63,12 @@ internal fun DocumentSnapshot.toFeedPost(): FeedPost? {
         reactions = getLong("reactions")?.toInt() ?: 0,
         comments = getLong("comments")?.toInt() ?: 0,
         accent = enumValue(getString("accent"), ActivityAccent.FOREST),
+        authorId = getString("authorId").orEmpty(),
+        category = enumValue(getString("category"), ActivityCategory.CASUAL),
+        intent = enumValue(getString("intent"), FeedPostIntent.MOMENT),
+        createdAtEpochMillis = createdAt?.toDate()?.time ?: 0L,
+        distanceKm = getDouble("distanceKm") ?: getLong("distanceKm")?.toDouble(),
+        relatedActivityId = getString("activityId"),
     )
 }
 

@@ -6,9 +6,12 @@ import com.neverdid.outside.model.ActivityCategory
 import com.neverdid.outside.model.ChatMessage
 import com.neverdid.outside.model.Conversation
 import com.neverdid.outside.model.FeedPost
+import com.neverdid.outside.model.FeedPostIntent
 import com.neverdid.outside.model.ForumTopic
 
 object SampleData {
+    private val now = System.currentTimeMillis()
+
     val activities = listOf(
         Activity(
             id = "sunset-trail",
@@ -95,6 +98,12 @@ object SampleData {
             reactions = 24,
             comments = 6,
             accent = ActivityAccent.FOREST,
+            authorId = "mara",
+            category = ActivityCategory.HIKING,
+            intent = FeedPostIntent.MOMENT,
+            createdAtEpochMillis = now - 32 * 60 * 1_000L,
+            distanceKm = 2.4,
+            relatedActivityId = "sunset-trail",
         ),
         FeedPost(
             id = "post-2",
@@ -106,6 +115,12 @@ object SampleData {
             reactions = 41,
             comments = 12,
             accent = ActivityAccent.SUNSET,
+            authorId = "no-pressure-runners",
+            category = ActivityCategory.RUNNING,
+            intent = FeedPostIntent.PLAN_RECAP,
+            createdAtEpochMillis = now - 2 * 60 * 60 * 1_000L,
+            distanceKm = 1.1,
+            relatedActivityId = "morning-run",
         ),
         FeedPost(
             id = "post-3",
@@ -117,6 +132,77 @@ object SampleData {
             reactions = 18,
             comments = 9,
             accent = ActivityAccent.LAKE,
+            authorId = "sofia",
+            category = ActivityCategory.CASUAL,
+            intent = FeedPostIntent.LOOKING_FOR_PEOPLE,
+            createdAtEpochMillis = now - 25 * 60 * 60 * 1_000L,
+            distanceKm = 4.8,
+            relatedActivityId = "lake-paddle",
+        ),
+        FeedPost(
+            id = "post-4",
+            author = "Radu & Ioana",
+            initials = "R&I",
+            timeAgo = "3 hr",
+            text = "First-time campers: what would make a one-night trip feel less intimidating? We’re planning extra gear and a shared dinner.",
+            activityLabel = "CAMPING · BEGINNER FRIENDLY",
+            reactions = 29,
+            comments = 17,
+            accent = ActivityAccent.VIOLET,
+            authorId = "radu-ioana",
+            category = ActivityCategory.CAMPING,
+            intent = FeedPostIntent.QUESTION,
+            createdAtEpochMillis = now - 3 * 60 * 60 * 1_000L,
+            distanceKm = 27.0,
+            relatedActivityId = "campfire-weekend",
+        ),
+        FeedPost(
+            id = "post-5",
+            author = "Ana C.",
+            initials = "AC",
+            timeAgo = "5 hr",
+            text = "Looking for two nervous road cyclists to try a low-traffic loop on Sunday. We can stop whenever we need.",
+            activityLabel = "LOOKING FOR PEOPLE · CYCLING",
+            reactions = 13,
+            comments = 8,
+            accent = ActivityAccent.FOREST,
+            authorId = "ana-c",
+            category = ActivityCategory.CYCLING,
+            intent = FeedPostIntent.LOOKING_FOR_PEOPLE,
+            createdAtEpochMillis = now - 5 * 60 * 60 * 1_000L,
+            distanceKm = 3.2,
+        ),
+        FeedPost(
+            id = "post-6",
+            author = "Paul R.",
+            initials = "PR",
+            timeAgo = "Yesterday",
+            text = "Tiny climbing tip: tell your partner what kind of encouragement helps before you start. It makes a first session much calmer.",
+            activityLabel = "CLIMBING · BEGINNER TIP",
+            reactions = 36,
+            comments = 4,
+            accent = ActivityAccent.SUNSET,
+            authorId = "paul-r",
+            category = ActivityCategory.CLIMBING,
+            intent = FeedPostIntent.TIP,
+            createdAtEpochMillis = now - 30 * 60 * 60 * 1_000L,
+            distanceKm = 5.5,
+        ),
+        FeedPost(
+            id = "post-7",
+            author = "Elena D.",
+            initials = "ED",
+            timeAgo = "2 d",
+            text = "Who wants a slow Sunday walk with coffee at the end? No pace goals, just a reason to leave the house.",
+            activityLabel = "LOOKING FOR PEOPLE · CASUAL",
+            reactions = 21,
+            comments = 11,
+            accent = ActivityAccent.LAKE,
+            authorId = "elena-d",
+            category = ActivityCategory.CASUAL,
+            intent = FeedPostIntent.LOOKING_FOR_PEOPLE,
+            createdAtEpochMillis = now - 48 * 60 * 60 * 1_000L,
+            distanceKm = 0.9,
         ),
     )
 

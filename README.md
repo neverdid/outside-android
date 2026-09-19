@@ -9,7 +9,7 @@ This repository contains a polished, interactive app foundation built with Kotli
 ## What is included
 
 - **Discover:** nearby plans, activity filters, search, plan details, persistent RSVP, and plan publishing
-- **Feed:** lightweight stories from recent activities with working reactions
+- **Feed:** personalized local stories with explainable ranking, filters, diversity, feedback controls, working reactions, and direct links to plans
 - **Community:** searchable, category-based forum topics, a working topic composer, and a weekly conversation prompt
 - **Direct messages:** realtime individual and activity group conversations with sendable messages
 - **Onboarding:** welcome and email flows, first-name setup, approximate area and radius, interest selection, and self-described experience
@@ -74,11 +74,11 @@ app/src/main/java/com/neverdid/outside/
 
 1. **Complete:** authentication and interest/location onboarding.
 2. **Implementation complete:** Firebase Authentication, Firestore repositories, realtime listeners, and security rules. A Firebase project configuration is required to activate the cloud path.
-3. Add geospatial discovery, date/distance filters, and map links.
-4. Add realtime DMs and per-activity group chats.
+3. **Implementation complete:** a transparent feed ranker using interests, freshness, proximity, connection intent, capped quality, joined plans, and session diversity.
+4. Add geospatial discovery, date/distance filters, and map links.
 5. Add reporting, blocking, moderation, and host cancellation flows before public launch.
 6. Add notifications, offline caching, UI tests, and analytics for the join funnel.
 
 ## Status
 
-`0.3.0` — Firebase backend milestone. The repository contains production adapters and safe Firestore rules while retaining a zero-credential demo mode. See [docs/MILESTONE_2_FIREBASE.md](docs/MILESTONE_2_FIREBASE.md).
+`0.4.0` — personalized feed and usability polish. The app now has a finite, explainable feed designed to turn inspiration into local plans. See [docs/FEED_RANKING.md](docs/FEED_RANKING.md).
